@@ -11,7 +11,6 @@ import string
 from collections import defaultdict
 from nltk.tree import Tree
 
-
 class Rule(object):
 	"""
 	Represents a CFG rule.
@@ -359,6 +358,7 @@ def main():
 
 	parser.add_argument('draw', nargs='?', default=False)
 	parser.add_argument('grammar_file', help="Filepath to grammer file")
+	parser.add_argument('--show-chart', action="store_true")
 
 	args = parser.parse_args()
 
@@ -367,7 +367,7 @@ def main():
 	def run_parse(sentence):
 		parse = EarleyParse(sentence, grammar)
 		parse.parse()
-		return parse.get()
+		return parse.get(), parse.chart
 
 	while True:
 		try:
@@ -378,7 +378,10 @@ def main():
 			for p in string.punctuation:
 				stripped_sentence = stripped_sentence.replace(p, '')
 
-			parse = run_parse(stripped_sentence)
+			parse, chart = run_parse(stripped_sentence)
+			if args.show_chart:
+				print chart
+				print '\n'
 			if parse is None:
 				print sentence + '\n'
 			else:
