@@ -1,7 +1,7 @@
 """
-Earley Parser.
+Error Correcting Earley Parser.
 
-@author: Hardik
+Modified from Hardik's Earley Parser implementation by Muhammad Nizami
 """
 
 import argparse
