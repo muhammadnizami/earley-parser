@@ -325,6 +325,11 @@ class ChartEntry(object):
 
 		if state not in self.states:
 			self.states.append(state)
+		else:
+			same_state = next(x for x in self.states if x==state)
+			if same_state.error_count > state.error_count:
+				self.states.remove(same_state)
+				self.states.append(state)
 
 
 class Chart(object):
