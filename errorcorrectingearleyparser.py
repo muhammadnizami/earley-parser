@@ -202,7 +202,7 @@ class ErrorGrammar(Grammar):
 			for sym2 in alphabet:
 				if sym2 != sym:
 					grammar.add(ErrorRule("E_"+sym,[sym2]))
-			grammar.add(ErrorRule("E_"+sym,["H", sym])) #TODO nanti benerin
+			grammar.add(ErrorRule("E_"+sym,["H", sym]))
 			grammar.add(ErrorRule("I",[sym]))
 			grammar.add(ErrorRule("E_"+sym,[])) #empty string
 
