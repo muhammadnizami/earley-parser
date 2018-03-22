@@ -31,6 +31,8 @@ displays the parses using NLTK's tree-drawing.
 
 See `sample-grammar.txt` on how to format your grammar. (The parser program requires each rule to only produce non-terminal or terminal symbols, not both.)
 
+To show the charts, you can add the argument `--show-chart`. To show the extended grammar, you can add the argument `--show-grammar`
+
 ### License
 
 MIT
