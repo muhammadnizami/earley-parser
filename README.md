@@ -29,7 +29,7 @@ python errorcorrectingearleyparser.py draw <grammar_file>
 
 displays the parses using NLTK's tree-drawing.
 
-See `sample-grammar.txt` on how to format your grammar. (The parser program requires each rule to only produce non-terminal or terminal symbols, not both.)
+See `sample-grammar.txt` on how to format your grammar. The parser program requires each rule to only produce non-terminal or terminal symbols, not both. The symbols `<GAM>`, `I`, `H`, `S'`, and `E_*` are reserved for internal processing. Defining such symbols in the grammar file will cause undefined behavior.
 
 To show the charts, you can add the argument `--show-chart`. To show the extended grammar, you can add the argument `--show-grammar`
 
