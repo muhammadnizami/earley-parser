@@ -42,6 +42,14 @@ class Rule(object):
 	def __str__(self):
 		return self.lhs + ' -> ' + ' '.join(self.rhs)
 
+	def error_score(self):
+		return 0
+
+class ErrorRule(Rule):
+
+	def error_score(self):
+		return 1
+
 
 class Grammar(object):
 	"""
@@ -58,6 +66,32 @@ class Grammar(object):
 		"""
 		
 		self.rules[rule.lhs].append(rule)
+
+	def get_alphabet(self):
+		symbols = set([])
+		alphabet = set([])
+		for key in self.rules:
+			for rule in self.rules[key]:
+				for sym in rule.rhs:
+					symbols.add(sym)
+		for sym in symbols:
+			if self.is_terminal(sym):
+				if sym not in alphabet:
+					alphabet.add(sym)
+		return alphabet
+
+	def get_tags(self):
+		symbols = set([])
+		tags = set([])
+		for key in self.rules:
+			for rule in self.rules[key]:
+				for sym in rule.rhs:
+					symbols.add(sym)
+		for sym in symbols:
+			if self.is_tag(sym):
+				if sym not in tags:
+					tags.add(sym)
+		return tags
 
 	@staticmethod
 	def load_grammar(fpath):
@@ -118,15 +152,80 @@ class Grammar(object):
 
 		return False
 
+class ErrorGrammar(Grammar):
+	@staticmethod
+	def load_grammar(fpath):
+		"""
+		Loads the grammar from file (from the )
+		"""
 
-class EarleyState(object):
+		grammar = ErrorGrammar()
+
+		with open(fpath) as f:
+			for line in f:
+				line = line.strip()
+
+				if len(line) == 0:
+					continue
+
+				entries = line.split('->')
+				lhs = entries[0].strip()
+				for rhs in entries[1].split('|'):
+					rhssymbols = rhs.strip().split()
+					grammar.add(Rule(lhs, rhssymbols))
+
+		alphabet = grammar.get_alphabet()
+		tags = grammar.get_tags()
+		#first step in Algorithm 1 in AHO's paper
+		added_rules_1 = []
+		for key in grammar.rules:
+			for rule in grammar.rules[key]:
+				new_rule_1 = ErrorGrammar.error_rule_1(grammar,rule)
+				if new_rule_1 is not None:
+					added_rules_1.append(new_rule_1)
+		for rule in added_rules_1:
+			grammar.add(rule)
+
+		#second step
+		for sym in alphabet.union(tags):
+			grammar.add(ErrorRule("E_"+sym,[sym]))
+			for sym2 in alphabet:
+				if sym2 != sym:
+					grammar.add(ErrorRule("E_"+sym,[sym2]))
+			grammar.add(ErrorRule("E_"+sym,["H", sym])) #TODO nanti benerin
+			grammar.add(ErrorRule("I",[sym]))
+			grammar.add(ErrorRule("E_a",[""]))
+
+		#third step
+		grammar.add(Rule("S'",["S"]))
+		grammar.add(Rule("S'",["S","H"]))
+		grammar.add(Rule("H",["H","I"]))
+		grammar.add(Rule("H",["I"]))
+		return grammar
+
+	@staticmethod
+	def error_rule_1(grammar,rule):
+		if grammar.is_tag(rule.lhs):
+			return None
+		new_rule_rhs = []
+		for sym in rule.rhs:
+			if not grammar.is_terminal(sym) and not grammar.is_tag(sym):
+				new_rule_rhs.append(sym)
+			else:
+				new_rule_rhs.append("E_"+sym)
+		if new_rule_rhs != rule.rhs:
+			return ErrorRule(rule.lhs,new_rule_rhs)
+		else:
+			return None
+
+class State(object):
 	"""
-	Represents a state in the Earley algorithm.
+	Represents a state in the error-correcting Earley algorithm.
 	"""
 
 	GAM = '<GAM>'
 
-	def __init__(self, rule, dot=0, sent_pos=0, chart_pos=0, back_pointers=[]):
+	def __init__(self, rule, dot=0, sent_pos=0, chart_pos=0, error_count=0, back_pointers=[]):
 		# CFG Rule.
 		self.rule = rule
 		# Dot position in the rule.
@@ -135,12 +234,14 @@ class EarleyState(object):
 		self.sent_pos = sent_pos
 		# Chart index.
 		self.chart_pos = chart_pos
+		# Error counter
+		self.error_count = error_count
 		# Pointers to child states (if the given state was generated using
 		# Completer).
 		self.back_pointers = back_pointers
 
 	def __eq__(self, other):
-		if type(other) is EarleyState:
+		if type(other) is State:
 			return self.rule == other.rule and self.dot == other.dot and \
 				self.sent_pos == other.sent_pos
 
@@ -157,7 +258,7 @@ class EarleyState(object):
 			return ('(' + state.rule.lhs + ' -> ' +
 			' '.join(state.rule.rhs[:state.dot] + ['*'] + 
 				state.rule.rhs[state.dot:]) +
-			(', [%d, %d])' % (state.sent_pos, state.chart_pos)))
+			(', [%d, %d], %d)' % (state.sent_pos, state.chart_pos, state.error_count)))
 
 		return (str_helper(self) +
 			' (' + ', '.join(str_helper(s) for s in self.back_pointers) + ')')
@@ -183,7 +284,7 @@ class EarleyState(object):
 		Returns the state used to initialize the chart in the Earley algorithm.
 		"""
 
-		return EarleyState(Rule(EarleyState.GAM, ['S']))
+		return State(Rule(State.GAM, ["S"]))
 
 
 class ChartEntry(object):
@@ -245,12 +346,12 @@ class Chart(object):
 		"""
 
 		return Chart([(ChartEntry([]) if i > 0 else
-				ChartEntry([EarleyState.init()])) for i in range(l)])
+				ChartEntry([State.init()])) for i in range(l)])
 
 
-class EarleyParse(object):
+class ErrorEarleyParse(object):
 	"""
-	Represents the Earley-generated parse for a given sentence according to a
+	Represents the Error-correcting Earley-generated parse for a given sentence according to a
 	given grammar.
 	"""
 
@@ -262,37 +363,39 @@ class EarleyParse(object):
 
 	def predictor(self, state, pos):
 		"""
-		Earley Predictor.
+		Error-correcting Earley Predictor.
 		"""
 
 		for rule in self.grammar[state.next()]:
-			self.chart[pos].add(EarleyState(rule, dot=0,
+			self.chart[pos].add(State(rule, dot=0,
 				sent_pos=state.chart_pos, chart_pos=state.chart_pos))
 
 	def scanner(self, state, pos):
 		"""
-		Earley Scanner.
+		Error-correcting Earley Scanner.
 		"""
 
 		if state.chart_pos < len(self.words):
 			word = self.words[state.chart_pos]
 
 			if any((word in r) for r in self.grammar[state.next()]):
-				self.chart[pos + 1].add(EarleyState(Rule(state.next(), [word]),
+				self.chart[pos + 1].add(State(Rule(state.next(), [word]),
 					dot=1, sent_pos=state.chart_pos,
-					chart_pos=(state.chart_pos + 1)))
+					chart_pos=(state.chart_pos + 1),
+					error_count = state.error_count))
 
 	def completer(self, state, pos):
 		"""
-		Earley Completer.
+		Error-correcting Earley Completer.
 		"""
 
 		for prev_state in self.chart[state.sent_pos]:
 			if prev_state.next() == state.rule.lhs:
-				self.chart[pos].add(EarleyState(prev_state.rule,
+				self.chart[pos].add(State(prev_state.rule,
 					dot=(prev_state.dot + 1), sent_pos=prev_state.sent_pos,
 					chart_pos=pos,
-					back_pointers=(prev_state.back_pointers + [state])))
+					back_pointers=(prev_state.back_pointers + [state]),
+					error_count=prev_state.error_count + state.error_count + state.rule.error_score()))
 
 	def parse(self):
 		"""
@@ -328,7 +431,7 @@ class EarleyParse(object):
 
 	def get(self):
 		"""
-		Returns the parse if it exists, otherwise returns None.
+		Returns the minimum error parse if it exists, otherwise returns None.
 		"""
 
 		def get_helper(state):
@@ -338,10 +441,17 @@ class EarleyParse(object):
 			return Tree(state.rule.lhs,
 				[get_helper(s) for s in state.back_pointers])
 
+		found_state = None
+		errors = float("inf")
 		for state in self.chart[-1]:
 			if state.is_complete() and state.rule.lhs == 'S' and \
 				state.sent_pos == 0 and state.chart_pos == len(self.words):
-				return get_helper(state)
+				if state.error_count < errors:
+					found_state = state
+					errors = state.error_count
+
+		if found_state is not None:
+			return get_helper(found_state)
 
 		return None
 
@@ -359,13 +469,16 @@ def main():
 	parser.add_argument('draw', nargs='?', default=False)
 	parser.add_argument('grammar_file', help="Filepath to grammer file")
 	parser.add_argument('--show-chart', action="store_true")
+	parser.add_argument('--show-grammar', action="store_true")
 
 	args = parser.parse_args()
 
-	grammar = Grammar.load_grammar(args.grammar_file)
+	grammar = ErrorGrammar.load_grammar(args.grammar_file)
+	if args.show_grammar:
+		print grammar
 
 	def run_parse(sentence):
-		parse = EarleyParse(sentence, grammar)
+		parse = ErrorEarleyParse(sentence, grammar)
 		parse.parse()
 		return parse.get(), parse.chart
 
