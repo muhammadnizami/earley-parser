@@ -7,5 +7,5 @@ Nominal -> Noun
 VP -> Verb NP
 
 Det -> that | a
-Noun -> book | flight
-Verb -> book
+Noun -> flight
+Verb -> book | fly
