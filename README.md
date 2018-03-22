@@ -1,7 +1,7 @@
 # error-correcting-earley-parser
 Partial implementation of Aho and Peterson's "A Minimum-Distance Error-Correcting Parser for Context-Free Languages", SIAM J. COMpUa’. Vol. 1, No. 4, December 1972
 
-The algorithm is only partially implemented for demo purposes. This implementation has not been fully verified and tested yet.
+The algorithm is only partially implemented for demo purposes. This implementation hasn't covered all cases mentioned in the paper. This implementation also has not been fully verified and tested yet.
 
 This implementation is built by extending Hardik Vala's implementation.
 
