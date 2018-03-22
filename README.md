@@ -1,18 +1,22 @@
-# earley-parser
-My implementation of the [Earley parser](https://en.wikipedia.org/wiki/Earley_parser) for syntactic parsing of sentences according to a context-free grammar (CFG). (Implemented for Question #3 of Assignment #2, COMP 599, McGill University.)
+# error-correcting-earley-parser
+Partial implementation of Aho and Peterson's "A Minimum-Distance Error-Correcting Parser for Context-Free Languages", SIAM J. COMpUa’. Vol. 1, No. 4, December 1972
+
+The algorithm is only partially implemented for demo purposes. This implementation has not been fully verified and tested yet.
+
+This implementation is built by extending Hardik Vala's implementation.
 
 ### Usage
 
 Example usage:
 
 ```
-python earleyparser.py sample-grammar.txt < sample-sentence.txt
+python errorcorrectingearleyparser.py sample-grammar.txt < sample-sentence-insertion-error.txt
 ```
 
 More generally, you can run the parser as follow,
 
 ```
-python earleyparser.py <grammer_file>
+python errorcorrectingearleyparser.py <grammar_file>
 ```
 
 which reads sentences from standard in, one at a time, printing the parses to standard output using pretty_print(), with parses separated by an extra newline. For sentences that do not have a parse according to the grammar, it prints the sentence back out, unchanged.
@@ -20,7 +24,7 @@ which reads sentences from standard in, one at a time, printing the parses to st
 Running with the `draw` option, like so,
 
 ```
-python earleyparser.py draw <grammer_file>
+python errorcorrectingearleyparser.py draw <grammar_file>
 ```
 
 displays the parses using NLTK's tree-drawing.
