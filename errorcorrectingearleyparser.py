@@ -152,6 +152,16 @@ class Grammar(object):
 
 		return False
 
+	def is_nullable(self, sym):
+		"""
+		Checks whether the given symbol is nullable, i.e. a non-terminal with rules
+		to null.
+		"""
+
+		if not self.is_terminal(sym):
+			return any(r.rhs==[] for r in self.rules[sym])
+
+
 class ErrorGrammar(Grammar):
 	@staticmethod
 	def load_grammar(fpath):
@@ -194,7 +204,7 @@ class ErrorGrammar(Grammar):
 					grammar.add(ErrorRule("E_"+sym,[sym2]))
 			grammar.add(ErrorRule("E_"+sym,["H", sym])) #TODO nanti benerin
 			grammar.add(ErrorRule("I",[sym]))
-			grammar.add(ErrorRule("E_a",[""]))
+			grammar.add(ErrorRule("E_"+sym,[])) #empty string
 
 		#third step
 		grammar.add(Rule("S'",["S"]))
