@@ -199,7 +199,7 @@ class ErrorGrammar(Grammar):
 		#second step
 		for sym in alphabet.union(tags):
 			grammar.add(ErrorRule("E_"+sym,[sym]))
-			for sym2 in alphabet:
+			for sym2 in alphabet.union(tags):
 				if sym2 != sym:
 					grammar.add(ErrorRule("E_"+sym,[sym2]))
 			grammar.add(ErrorRule("E_"+sym,["H", sym]))
